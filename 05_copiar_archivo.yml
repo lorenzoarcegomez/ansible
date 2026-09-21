@@ -1,0 +1,27 @@
+---
+- name: Copiar un archivo local a las máquinas del aula
+  hosts: all
+  become: yes
+
+  vars:
+    # Define las rutas como variables para cambiarlas fácilmente en el futuro
+    origen_archivo: "/home/ansible-admin/ansible-aulas/virtual.deb"
+    destino_directorio: "/datos"
+    nombre_destino: "virtual.deb"
+
+  tasks:
+    - name: 1. Asegurar que el directorio de destino existe
+      file:
+        path: "{{ destino_directorio }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: 2. Copiar el archivo al directorio de destino
+      copy:
+        src: "{{ origen_archivo }}"
+        dest: "{{ destino_directorio }}/{{ nombre_destino }}"
+        owner: root
+        group: root
+        mode: '0777'

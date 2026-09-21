@@ -1,0 +1,65 @@
+---
+- name: Instalar NVM y Node.js 24 de forma global para todos los usuarios
+  hosts: all
+  become: yes
+
+  vars:
+    nvm_dir: "/usr/local/nvm"
+
+  tasks:
+    - name: 1. Crear el directorio global para NVM
+      ansible.builtin.file:
+        path: "{{ nvm_dir }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: 2. Descargar el instalador de NVM
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh"
+        dest: /tmp/install_nvm.sh
+        mode: '0755'
+        timeout: 60
+
+    - name: 3. Ejecutar el instalador definiendo NVM_DIR en /usr/local/nvm
+      ansible.builtin.shell: |
+        export NVM_DIR="{{ nvm_dir }}"
+        bash /tmp/install_nvm.sh
+      args:
+        executable: /bin/bash
+      register: nvm_install_result
+      changed_when: "'is already installed' not in nvm_install_result.stdout"
+
+    - name: 4. Cargar NVM e instalar Node.js 24 globalmente
+      ansible.builtin.shell: |
+        export NVM_DIR="{{ nvm_dir }}"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install 24
+        nvm alias default 24
+      args:
+        executable: /bin/bash
+      register: node_install
+      changed_when: "'is already installed' not in node_install.stdout"
+
+    - name: 5. Crear perfil global en /etc/profile.d/ para que todos los usuarios tengan Node en su PATH
+      ansible.builtin.copy:
+        dest: /etc/profile.d/nvm.sh
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          export NVM_DIR="{{ nvm_dir }}"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+    - name: 6. Enlazar los ejecutables de node y npm en /usr/local/bin (Acceso directo para todos)
+      ansible.builtin.file:
+        src: "{{ nvm_dir }}/versions/node/v24.1.0/bin/{{ item }}"  # Ajusta si la versión exacta difiere
+        dest: "/usr/local/bin/{{ item }}"
+        state: link
+        force: yes
+      loop:
+        - node
+        - npm
+        - npx
+      ignore_errors: yes
