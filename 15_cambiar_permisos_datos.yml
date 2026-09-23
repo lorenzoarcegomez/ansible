@@ -1,0 +1,27 @@
+---
+- name: Asegurar montaje y permisos de escritura en disco de datos existente
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: 1. Asegurar que la carpeta /datos existe como punto de montaje
+      ansible.builtin.file:
+        path: /datos
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: 2. Garantizar montaje permanente en /etc/fstab y montar si no lo está
+      ansible.posix.mount:
+        path: /datos
+        src: /dev/sdb1
+        fstype: ext4
+        opts: defaults
+        state: mounted
+
+    - name: 3. Aplicar permisos 0777 en la raíz del disco ya montado (Sin borrar datos)
+      ansible.builtin.file:
+        path: /datos
+        state: directory
+        mode: '0777'
