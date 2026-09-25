@@ -18,11 +18,11 @@ scp ~/ansible-aulas/inventarios/* ansible-admin@10.0.X.X:~/ansible-aulas/inventa
 A continuación, le cambiamos el nombre a los archivos copiados:
 
 ```bash
-mv ~/.ssh/ansible-admin/ansible-admin_ed25519 ~/.ssh/ansible-admin/ansible-admin_ed25519_IF0X
+mv ~/.ssh/ansible-admin_ed25519 ~/.ssh/ansible-admin_ed25519_IF0X
 ```
 
 ```bash
-mv ~/.ssh/ansible-admin/ansible-admin_ed25519.pub ~/.ssh/ansible-admin/ansible-admin_ed25519_IF0X.pub
+mv ~/.ssh/ansible-admin_ed25519.pub ~/.ssh/ansible-admin_ed25519_IF0X.pub
 ```
 
 Ahora tenemos que incluir la clave dentro del archivo de inventario:
