@@ -1,0 +1,46 @@
+---
+- name: Permitir uso de Wireshark a todos los usuarios del sistema
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: 1. Asegurar que Wireshark está instalado
+      ansible.builtin.apt:
+        name:
+          - wireshark
+          - tshark
+          - wireshark-common
+        state: present
+
+    - name: 2. Permitir capturas a usuarios no root mediante debconf
+      ansible.builtin.debconf:
+        name: wireshark-common
+        question: wireshark-common/install-setuid
+        vtype: boolean
+        value: "true"
+
+    - name: 3. Aplicar reconfiguración del paquete wireshark-common
+      ansible.builtin.command: dpkg-reconfigure -f noninteractive wireshark-common
+      changed_when: false
+
+    - name: 4. Obtener la lista de usuarios reales del sistema (UID >= 1000)
+      ansible.builtin.getent:
+        database: passwd
+
+    - name: 5. Filtrar usuarios normales (excluyendo root y cuentas del sistema)
+      ansible.builtin.set_fact:
+        target_users: "{{ getent_passwd | dict2items | selectattr('value.1', 'ge', '1000') | map(attribute='key') | reject('equalto', 'nobody') | list }}"
+
+    - name: 6. Añadir todos los usuarios del sistema al grupo wireshark
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups: wireshark
+        append: true
+      loop: "{{ target_users }}"
+
+    - name: 7. Asegurar las capacidades necesarias en dumpcap
+      ansible.builtin.file:
+        path: /usr/bin/dumpcap
+        group: wireshark
+        mode: '0754'
